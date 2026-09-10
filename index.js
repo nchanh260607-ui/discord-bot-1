@@ -388,16 +388,25 @@ client.on('channelUpdate', async (oldChannel, newChannel) => {
     const logChannel = newChannel.guild.channels.cache.get(logChannelId);
     if (!logChannel) return;
 
+    // Đợi 2 giây để API Discord kịp ghi log
     await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Bỏ khóa type, lấy 10 log gần nhất để quét cả sự kiện đổi quyền kênh
     const fetchedLogs = await newChannel.guild.fetchAuditLogs({
-        limit: 1,
-        type: AuditLogEvent.ChannelUpdate,
+        limit: 10
     });
     
-    const updateLog = fetchedLogs.entries.first();
+    // Quét log: Tìm log đổi tên (target.id) hoặc đổi quyền (extra.channel.id)
+    const updateLog = fetchedLogs.entries.find(entry => 
+        entry.target?.id === newChannel.id || 
+        entry.extra?.channel?.id === newChannel.id ||
+        entry.extra?.id === newChannel.id
+    );
+    
     let executor = null;
 
-    if (updateLog && updateLog.target.id === newChannel.id && (Date.now() - updateLog.createdTimestamp < 5000)) {
+    // Tăng thời gian chờ lên 15 giây để chống delay
+    if (updateLog && (Date.now() - updateLog.createdTimestamp < 15000)) {
         executor = updateLog.executor;
     }
 
@@ -408,27 +417,28 @@ client.on('channelUpdate', async (oldChannel, newChannel) => {
         .setTimestamp()
         .setFooter({ text: '🏠Home Chill🏡' });
 
+    // Tạo sẵn tag người dùng
+    const userTag = executor ? `<@${executor.id}>` : 'người dùng (không xác định)';
+
     // Check xem có đổi tên kênh không
     if (oldChannel.name !== newChannel.name) {
         embed.addFields(
             { name: 'Tên cũ:', value: `**${oldChannel.name}**`, inline: true },
-            { name: 'Tên mới:', value: `**${newChannel.name}**`, inline: true }
+            { name: 'Tên mới:', value: `**${newChannel.name}**`, inline: true },
+            { name: '👤 Người sửa:', value: userTag, inline: false }
         );
     } else {
-        // Tạo chuỗi tag người sửa, nếu API không kịp trả về thì để 'không xác định'
-        const userTag = executor ? `<@${executor.id}>` : 'người dùng (không xác định)';
-        
         // Chèn thẳng biến userTag vào mục Chi tiết
         embed.addFields({ 
             name: 'Chi tiết:', 
             value: `Đã thay đổi quyền, chủ đề hoặc cài đặt khác bởi ${userTag}` 
         });
     }
+
+    // Gắn avatar người sửa nếu có
     if (executor) {
-        embed.addFields({ name: '👤 Người sửa:', value: `<@${executor.id}>` });
-        embed.setThumbnail(executor.displayAvatarURL()); // Hiện Avatar người sửa
+        embed.setThumbnail(executor.displayAvatarURL()); 
     }
 
     logChannel.send({ embeds: [embed] });
 });
-client.login(process.env.DISCORD_TOKEN);
