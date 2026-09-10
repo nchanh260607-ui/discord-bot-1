@@ -415,9 +415,15 @@ client.on('channelUpdate', async (oldChannel, newChannel) => {
             { name: 'Tên mới:', value: `**${newChannel.name}**`, inline: true }
         );
     } else {
-        embed.addFields({ name: 'Chi tiết:', value: 'Đã thay đổi quyền, chủ đề hoặc cài đặt khác...' });
+        // Tạo chuỗi tag người sửa, nếu API không kịp trả về thì để 'không xác định'
+        const userTag = executor ? `<@${executor.id}>` : 'người dùng (không xác định)';
+        
+        // Chèn thẳng biến userTag vào mục Chi tiết
+        embed.addFields({ 
+            name: 'Chi tiết:', 
+            value: `Đã thay đổi quyền, chủ đề hoặc cài đặt khác bởi ${userTag}` 
+        });
     }
-
     if (executor) {
         embed.addFields({ name: '👤 Người sửa:', value: `<@${executor.id}>` });
         embed.setThumbnail(executor.displayAvatarURL()); // Hiện Avatar người sửa
