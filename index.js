@@ -403,7 +403,7 @@ client.on('channelUpdate', async (oldChannel, newChannel) => {
 
     const embed = new EmbedBuilder()
         .setColor('#FFA500') // Màu cam/vàng
-        .setTitle('⚙️ Kênh vừa bị chỉnh sửa')
+        .setTitle('⚙️ TEST KÊNH')
         .setDescription(`Kênh đang được nhắc đến: <#${newChannel.id}>`)
         .setTimestamp()
         .setFooter({ text: '🏠Home Chill🏡' });
